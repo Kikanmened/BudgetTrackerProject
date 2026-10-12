@@ -29,7 +29,7 @@ while (isRunning)
             break;
 
         case "2":
-            Console.WriteLine("Remove Transaction selected.");
+            RemoveTransaction(transactionService);
             break;
 
         case "3":
@@ -110,5 +110,39 @@ static decimal AskForAmount()
         }
 
         Console.WriteLine("Invalid amount. Please enter a positive number.");
+    }
+}
+
+static void RemoveTransaction(TransactionService transactionService)
+{
+    Guid id = AskForTransactionId();
+
+    bool wasRemoved = transactionService.RemoveTransaction(id);
+
+    if (wasRemoved)
+    {
+        Console.WriteLine("Transaction removed successfully.");
+    }
+    else
+    {
+        Console.WriteLine("No transaction found with that Id.");
+    }
+}
+
+static Guid AskForTransactionId()
+{
+    while (true)
+    {
+        Console.Write("Enter transaction Id: ");
+        string? input = Console.ReadLine();
+
+        bool isValidId = Guid.TryParse(input, out Guid id);
+
+        if (isValidId)
+        {
+            return id;
+        }
+
+        Console.WriteLine("Invalid Id. Please enter a valid transaction Id.");
     }
 }
