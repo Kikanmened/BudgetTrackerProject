@@ -1,5 +1,10 @@
-﻿using BudgetTrackerProject.Models;
+﻿using System.Globalization;
+using BudgetTrackerProject.Models;
 using BudgetTrackerProject.Services;
+
+CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-IE");
+CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-IE");
+
 Directory.CreateDirectory("data");
 Directory.CreateDirectory("logs");
 
@@ -29,11 +34,11 @@ while (isRunning)
             break;
 
         case "2":
-            Console.WriteLine("Remove Transaction selected.");
+            RemoveTransaction(transactionService);
             break;
 
         case "3":
-            Console.WriteLine("View Report selected.");
+            ShowReport(transactionService);
             break;
 
         case "4":
@@ -111,4 +116,150 @@ static decimal AskForAmount()
 
         Console.WriteLine("Invalid amount. Please enter a positive number.");
     }
+}
+
+static Guid AskForTransactionId()
+{
+    while (true)
+    {
+        Console.Write("Enter transaction Id: ");
+        string? input = Console.ReadLine();
+
+        bool isValidId = Guid.TryParse(input, out Guid id);
+
+        if (isValidId)
+        {
+            return id;
+        }
+
+        Console.WriteLine("Invalid Id. Please enter a valid transaction Id.");
+    }
+}
+
+static void RemoveTransaction(TransactionService transactionService)
+{
+    Guid id = AskForTransactionId();
+
+    bool wasRemoved = transactionService.RemoveTransaction(id);
+
+    if (wasRemoved)
+    {
+        Console.WriteLine("Transaction removed successfully.");
+    }
+    else
+    {
+        Console.WriteLine("No transaction found with that Id.");
+    }
+}
+
+static void ShowReport(TransactionService transactionService)
+{
+    DateOnly startDate = AskForDate("Enter start date (yyyy-MM-dd): ");
+    DateOnly endDate = AskForDate("Enter end date (yyyy-MM-dd): ");
+
+    if (endDate < startDate)
+    {
+        Console.WriteLine("End date cannot be before start date.");
+        return;
+    }
+
+    List<Transaction> transactions = transactionService.GetTransactions(startDate, endDate);
+    List<Transaction> filteredTransactions = FilterTransactionsByType(transactions);
+
+    PrintTransactions(filteredTransactions);
+
+    if (filteredTransactions.Count > 0)
+    {
+        PrintTotals(filteredTransactions);
+    }
+}
+
+static DateOnly AskForDate(string message)
+{
+    while (true)
+    {
+        Console.Write(message);
+        string? input = Console.ReadLine();
+
+        bool isValidDate = DateOnly.TryParseExact(
+            input,
+            "yyyy-MM-dd",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out DateOnly date
+        );
+
+        if (isValidDate)
+        {
+            return date;
+        }
+
+        Console.WriteLine("Invalid date. Please use yyyy-MM-dd.");
+    }
+}
+
+static List<Transaction> FilterTransactionsByType(List<Transaction> transactions)
+{
+    while (true)
+    {
+        Console.Write("Filter by type? (All/Income/Expense): ");
+        string? input = Console.ReadLine();
+
+        if (string.Equals(input, "All", StringComparison.OrdinalIgnoreCase))
+        {
+            return transactions;
+        }
+
+        bool isValidType = Enum.TryParse(input, true, out TransactionType type);
+        bool isDefinedType = Enum.IsDefined(type);
+
+        if (isValidType && isDefinedType && !decimal.TryParse(input, out _))
+        {
+            return transactions
+                .Where(transaction => transaction.Type == type)
+                .ToList();
+        }
+
+        Console.WriteLine("Invalid filter. Please enter All, Income, or Expense.");
+    }
+}
+
+static void PrintTransactions(List<Transaction> transactions)
+{
+    Console.WriteLine();
+    Console.WriteLine("=== Report ===");
+
+    if (transactions.Count == 0)
+    {
+        Console.WriteLine("No transactions found.");
+        return;
+    }
+
+    foreach (Transaction transaction in transactions.OrderBy(transaction => transaction.Timestamp))
+    {
+        Console.WriteLine($"Id: {transaction.Id}");
+        Console.WriteLine($"Date: {transaction.Timestamp:yyyy-MM-dd HH:mm}");
+        Console.WriteLine($"Type: {transaction.Type}");
+        Console.WriteLine($"Description: {transaction.Description}");
+        Console.WriteLine($"Amount: {transaction.Amount:C}");
+        Console.WriteLine();
+    }
+}
+
+static void PrintTotals(List<Transaction> transactions)
+{
+    decimal totalIncome = transactions
+        .Where(transaction => transaction.Type == TransactionType.Income)
+        .Sum(transaction => transaction.Amount);
+
+    decimal totalExpenses = transactions
+        .Where(transaction => transaction.Type == TransactionType.Expense)
+        .Sum(transaction => transaction.Amount);
+
+    decimal balance = totalIncome - totalExpenses;
+
+    Console.WriteLine("=== Totals ===");
+    Console.WriteLine($"Income: {totalIncome:C}");
+    Console.WriteLine($"Expenses: {totalExpenses:C}");
+    Console.WriteLine($"Balance: {balance:C}");
 }
