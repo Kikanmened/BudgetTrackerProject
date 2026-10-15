@@ -1,23 +1,7 @@
 # Budget Tracker
-
-This app touches almost everything learned in the C# lessons.
-
-As we build it, we recap each topic:
-
-| Building block | C# topic |
-| --- | --- |
-| Transaction model | records, properties, and enums |
-| Main menu | methods, conditionals, loops, and `switch` |
-| Add and remove flows | validation, `Guid`, and service methods |
-| Save and load | file I/O and JSON serialisation |
-| Reports | LINQ, filtering, ordering, and totals |
-| Notifications | events and `EventArgs` |
-| Safety | exceptions and `TryParse` methods |
-| Project structure | namespaces and separation of responsibilities |
-
 ## What This Project Recaps
 
-The Budget Tracker brings together the following Backend lessons:
+The Budget Tracker brings together the following Backend aspects:
 
 - Top-level statements for starting a console application.
 - Records and enums for representing transaction data.
@@ -50,7 +34,7 @@ Keeping these responsibilities separate makes each part easier to understand, te
 
 ## Requirement And Lesson Map
 
-| Requirement | What it provides | C# lesson or topic |
+| Requirement | What it provides | My C# lesson or topic |
 | --- | --- | --- |
 | FR001 | Console project bootstrap | top-level statements |
 | FR002 | Repeating main menu | loops, methods, and `switch` |
