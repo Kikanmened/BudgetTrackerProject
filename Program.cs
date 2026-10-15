@@ -58,7 +58,13 @@ static void AddTransaction(TransactionService transactionService)
     string description = AskForDescription();
     decimal amount = AskForAmount();
 
-    Transaction transaction = transactionService.AddTransaction(type, description, amount);
+    Transaction? transaction = transactionService.AddTransaction(type, description, amount);
+
+    if (transaction == null)
+    {
+        Console.WriteLine("Transaction could not be saved.");
+        return;
+    }
 
     Console.WriteLine();
     Console.WriteLine("Transaction added successfully.");

@@ -13,7 +13,19 @@ public class StorageService
     public StorageService(string dataDirectory)
     {
         _dataDirectory = dataDirectory;
-        Directory.CreateDirectory(_dataDirectory);
+
+        try
+        {
+            Directory.CreateDirectory(_dataDirectory);
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Could not create data directory: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Console.WriteLine($"Access denied for data directory: {ex.Message}");
+        }
 
         _jsonOptions = new JsonSerializerOptions
         {
@@ -23,22 +35,59 @@ public class StorageService
         _jsonOptions.Converters.Add(new JsonStringEnumConverter());
     }
 
-    public void SaveTransaction(Transaction transaction)
+    public bool SaveTransaction(Transaction transaction)
     {
-        string filePath = GetFilePath(transaction.Timestamp);
+        try
+        {
+            string filePath = GetFilePath(transaction.Timestamp);
 
-        List<Transaction> transactions = LoadTransactionsFromFile(filePath);
-        transactions.Add(transaction);
+            List<Transaction> transactions = LoadTransactionsFromFile(filePath);
+            transactions.Add(transaction);
 
-        string json = JsonSerializer.Serialize(transactions, _jsonOptions);
-        File.WriteAllText(filePath, json);
+            string json = JsonSerializer.Serialize(transactions, _jsonOptions);
+            File.WriteAllText(filePath, json);
+
+            return true;
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Could not save transaction: {ex.Message}");
+            return false;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Console.WriteLine($"Access denied while saving transaction: {ex.Message}");
+            return false;
+        }
+        catch (JsonException ex)
+        {
+            Console.WriteLine($"Could not format transaction data: {ex.Message}");
+            return false;
+        }
     }
 
     public List<Transaction> LoadTransactions(DateOnly startDate, DateOnly endDate)
     {
         List<Transaction> allTransactions = new List<Transaction>();
 
-        foreach (string filePath in Directory.GetFiles(_dataDirectory, "*.json"))
+        string[] filePaths;
+
+        try
+        {
+            filePaths = Directory.GetFiles(_dataDirectory, "*.json");
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Could not read the data directory: {ex.Message}");
+            return allTransactions;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Console.WriteLine($"Access denied while reading the data directory: {ex.Message}");
+            return allTransactions;
+        }
+
+        foreach (string filePath in filePaths)
         {
             string fileName = Path.GetFileNameWithoutExtension(filePath);
 
@@ -62,7 +111,24 @@ public class StorageService
 
     public bool RemoveTransaction(Guid id)
     {
-        foreach (string filePath in Directory.GetFiles(_dataDirectory, "*.json"))
+        string[] filePaths;
+
+        try
+        {
+            filePaths = Directory.GetFiles(_dataDirectory, "*.json");
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Could not read the data directory: {ex.Message}");
+            return false;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Console.WriteLine($"Access denied while reading the data directory: {ex.Message}");
+            return false;
+        }
+
+        foreach (string filePath in filePaths)
         {
             List<Transaction> transactions = LoadTransactionsFromFile(filePath);
 
@@ -72,10 +138,28 @@ public class StorageService
             {
                 transactions.Remove(transactionToRemove);
 
-                string json = JsonSerializer.Serialize(transactions, _jsonOptions);
-                File.WriteAllText(filePath, json);
+                try
+                {
+                    string json = JsonSerializer.Serialize(transactions, _jsonOptions);
+                    File.WriteAllText(filePath, json);
 
-                return true;
+                    return true;
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine($"Could not remove transaction: {ex.Message}");
+                    return false;
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Console.WriteLine($"Access denied while removing transaction: {ex.Message}");
+                    return false;
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"Could not format transaction data: {ex.Message}");
+                    return false;
+                }
             }
         }
 
