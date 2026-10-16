@@ -1,0 +1,9 @@
+[
+  {
+    "Id": "c47c2666-9bc4-46fe-8f6d-da73e8046d88",
+    "Timestamp": "2026-10-16T05:31:18.069514+02:00",
+    "Type": "Expense",
+    "Description": "Rent",
+    "Amount": 200
+  }
+]
