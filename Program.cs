@@ -5,50 +5,72 @@ using BudgetTrackerProject.Services;
 CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-IE");
 CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-IE");
 
-Directory.CreateDirectory("data");
-Directory.CreateDirectory("logs");
+StorageService storageService;
+TransactionService transactionService;
 
-StorageService storageService = new StorageService("data");
-TransactionService transactionService = new TransactionService(storageService);
-LoggerService loggerService = new LoggerService("logs");
-loggerService.Subscribe(transactionService);
+try
+{
+    Directory.CreateDirectory("data");
+    Directory.CreateDirectory("logs");
+
+    storageService = new StorageService("data");
+    transactionService = new TransactionService(storageService);
+    LoggerService loggerService = new LoggerService("logs");
+    loggerService.Subscribe(transactionService);
+}
+catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or StorageException)
+{
+    Console.WriteLine(ex is StorageException ? ex.Message : $"Could not start the application: {ex.Message}");
+    return;
+}
 
 bool isRunning = true;
 
 while (isRunning)
 {
-    Console.WriteLine();
-    Console.WriteLine("=== Budget Tracker ===");
-    Console.WriteLine("1. Add Transaction");
-    Console.WriteLine("2. Remove Transaction");
-    Console.WriteLine("3. View Report");
-    Console.WriteLine("4. Exit");
-    Console.Write("Choose an option: ");
-
-    string? choice = Console.ReadLine();
-
-    switch (choice)
+    try
     {
-        case "1":
-            AddTransaction(transactionService);
-            break;
+        Console.WriteLine();
+        Console.WriteLine("=== Budget Tracker ===");
+        Console.WriteLine("1. Add Transaction");
+        Console.WriteLine("2. Remove Transaction");
+        Console.WriteLine("3. View Report");
+        Console.WriteLine("4. Exit");
+        Console.Write("Choose an option: ");
 
-        case "2":
-            RemoveTransaction(transactionService);
-            break;
+        string? choice = Console.ReadLine();
 
-        case "3":
-            ShowReport(transactionService);
-            break;
+        switch (choice)
+        {
+            case "1":
+                AddTransaction(transactionService);
+                break;
 
-        case "4":
-            Console.WriteLine("Goodbye!");
-            isRunning = false;
-            break;
+            case "2":
+                RemoveTransaction(transactionService);
+                break;
 
-        default:
-            Console.WriteLine("Invalid option. Please choose 1, 2, 3, or 4.");
-            break;
+            case "3":
+                ShowReport(transactionService);
+                break;
+
+            case "4":
+                Console.WriteLine("Goodbye!");
+                isRunning = false;
+                break;
+
+            default:
+                Console.WriteLine("Invalid option. Please choose 1, 2, 3, or 4.");
+                break;
+        }
+    }
+    catch (StorageException ex)
+    {
+        Console.WriteLine(ex.Message);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Something went wrong: {ex.Message}");
     }
 }
 
@@ -58,13 +80,7 @@ static void AddTransaction(TransactionService transactionService)
     string description = AskForDescription();
     decimal amount = AskForAmount();
 
-    Transaction? transaction = transactionService.AddTransaction(type, description, amount);
-
-    if (transaction == null)
-    {
-        Console.WriteLine("Transaction could not be saved.");
-        return;
-    }
+    Transaction transaction = transactionService.AddTransaction(type, description, amount);
 
     Console.WriteLine();
     Console.WriteLine("Transaction added successfully.");
