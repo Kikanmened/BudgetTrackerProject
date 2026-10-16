@@ -14,7 +14,7 @@ public class TransactionService
         _storageService = storageService;
     }
 
-    public Transaction AddTransaction(TransactionType type, string description, decimal amount)
+    public Transaction? AddTransaction(TransactionType type, string description, decimal amount)
     {
         Transaction transaction = new Transaction(
             Guid.NewGuid(),
@@ -24,7 +24,13 @@ public class TransactionService
             amount
         );
 
-        _storageService.SaveTransaction(transaction);
+        bool wasSaved = _storageService.SaveTransaction(transaction);
+
+        if (!wasSaved)
+        {
+            return null;
+        }
+
         OnTransactionAdded(transaction);
 
         return transaction;
